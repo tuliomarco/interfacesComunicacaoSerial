@@ -8,6 +8,10 @@
 
 #include "ws2812b.pio.h"
 
+/*
+* Desenvolvedor: Marco Túlio Macêdo Oliveira dos Santos
+*/
+
 // Definição dos pinos para conexão com os LEDs RGB
 #define LED_G_PIN 11
 #define LED_B_PIN 12
@@ -102,6 +106,7 @@ void init_display() {
     // Valores iniciais
     ssd1306_draw_string(&ssd, "Digite algo", 8, 10);
     ssd1306_draw_string(&ssd, "G OFF", 8, 48);
+    ssd1306_draw_icon(&ssd, 2, 58, 48);
     ssd1306_draw_string(&ssd, "B OFF", 80, 48);
     ssd1306_send_data(&ssd);  
 }
@@ -168,40 +173,57 @@ void clear_line(uint y) {
     }
   }
 
-void button_callback(uint gpio, uint32_t events) {
-    uint32_t now = to_ms_since_boot(get_absolute_time());
+  void button_callback(uint gpio, uint32_t events) {
+    uint32_t now = to_ms_since_boot(get_absolute_time()); // Obtém o tempo atual em ms
 
-    if(now - last_interrupt_time > DEBOUNCE_DELAY_MS) {
-        last_interrupt_time = now;
+    if(now - last_interrupt_time > DEBOUNCE_DELAY_MS) { // Verifica se o botão foi pressionado após o tempo de debounce
+        last_interrupt_time = now; // Atualiza o tempo da última interrupção
 
+        // Alterna o estado do LED verde se o botão A for pressionado
         if(gpio == BTN_A_PIN) {
             green_led_on = !green_led_on;
             gpio_put(LED_G_PIN, green_led_on);
-            ssd1306_draw_string(&ssd, green_led_on ? "G ON " : "G OFF", 8, 48);
-        } else if(gpio == BTN_B_PIN) {
+            ssd1306_draw_string(&ssd, green_led_on ? "G ON " : "G OFF", 8, 48); // Atualiza o display
+            printf(green_led_on ? "LED Verde ON\n" : "LED Verde OFF\n");
+        } 
+        // Alterna o estado do LED azul se o botão B for pressionado
+        else if(gpio == BTN_B_PIN) {
             blue_led_on = !blue_led_on;
             gpio_put(LED_B_PIN, blue_led_on);
-            ssd1306_draw_string(&ssd, blue_led_on ? "B ON " : "B OFF", 80, 48);
+            ssd1306_draw_string(&ssd, blue_led_on ? "B ON " : "B OFF", 80, 48); // Atualiza o display
+            printf(blue_led_on ? "LED Azul ON\n" : "LED Azul OFF\n");
         }
 
+        // Atualiza o ícone no display de acordo com os LEDs ligados/desligados
+        if(green_led_on && blue_led_on) 
+            ssd1306_draw_icon(&ssd, 0, 58, 48);  // Ambos ligados
+        else if(green_led_on || blue_led_on) 
+            ssd1306_draw_icon(&ssd, 1, 58, 48);  // Apenas um ligado
+        else 
+            ssd1306_draw_icon(&ssd, 2, 58, 48);  // Ambos desligados
+
+        // Atualiza os LEDs da matriz se um número válido estiver selecionado
         if(number_id >= 0 && number_id <= 9) {
-            set_led_by_pattern(led_number_pattern[number_id]);
-            write_leds();
+            set_led_by_pattern(led_number_pattern[number_id]); // Define o padrão dos LEDs
+            write_leds(); // Envia os dados para a matriz de LEDs
         }
-        ssd1306_send_data(&ssd);   
+
+        ssd1306_send_data(&ssd); // Envia os dados atualizados para o display
     }
 }
 
-
 int main() {
     stdio_init_all();
-    init_pio(LED_MTX_PIN);
+    sleep_ms(500);
+
+    init_pio(LED_MTX_PIN); // Configura o PIO para controlar a matriz de LEDs
     clear_leds();
     write_leds();
-    i2c_init(I2C_PORT, 400 * 1000);
+    i2c_init(I2C_PORT, 400 * 1000); // Inicializa o barramento I2C com frequência de 400 kHz
     init_gpio();
     init_display();
 
+    // Configurando as interrupções para o pressionamento dos botões
     gpio_set_irq_enabled_with_callback(BTN_A_PIN, GPIO_IRQ_EDGE_FALL, true, &button_callback);
     gpio_set_irq_enabled_with_callback(BTN_B_PIN, GPIO_IRQ_EDGE_FALL, true, &button_callback);
 
