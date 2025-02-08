@@ -36,3 +36,6 @@ Este projeto utiliza o microcontrolador **RP2040** para controlar uma matriz de 
 3. Pressione os botões A ou B para alternar os LEDs e observe as mensagens no display.
 4. Digite caracteres no Serial Monitor para exibi-los no display.
 5. Digite números de **0 a 9** para exibi-los na matriz **WS2812B**.
+
+## Demonstração
+Assista ao funcionamento do projeto neste [vídeo demonstrativo](https://drive.google.com/file/d/1mG8nyyZ_10PflgGESEHk-oKKaDJ3Q-89/view?usp=sharing).
